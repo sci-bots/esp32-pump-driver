@@ -2,7 +2,6 @@ import gc
 
 from bootstrap import fetch_update
 from machine import Pin, I2C, UART
-import asyn
 import bootstrap
 import motor
 import rpc
