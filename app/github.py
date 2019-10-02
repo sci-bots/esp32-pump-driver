@@ -1,3 +1,4 @@
+import gc
 import os
 
 try:
@@ -62,11 +63,8 @@ class Repo:
                 with open(output_path, 'w') as output:
                     output.write(response.text)
             elif path['type'] == 'dir':
-                response = get(path['_links']['self'])
+                response = self.get(path['_links']['self'])
                 contents = response.json()
-                root = (root + '/' if root else '')
-                download(contents, root=root)
-            try:
-                gc.collect()
-            except:
-                pass
+                self.download(contents, root=(root + '/' if root else '')
+                              + '/' + path['name'])
+            gc.collect()

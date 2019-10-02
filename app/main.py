@@ -1,9 +1,10 @@
 import gc
+import os
 
-from bootstrap import fetch_update
 from machine import Pin, I2C, UART
 import bootstrap
 import motor
+import ota
 import rpc
 import uasyncio as asyncio
 import wifimgr
