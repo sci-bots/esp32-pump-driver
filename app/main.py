@@ -24,12 +24,14 @@ def main():
     # Reclaim memory associated with any temporary allocations.
     gc.collect()
 
+    g = globals()
+    g['i2c'] = i2c
+    g['motor_ctrl'] = motor.GroveMotorControl(i2c)
+    g['uart'] = uart
+    g['wlan'] = wlan
+
     loop = asyncio.get_event_loop()
-    loop.run_until_complete(rpc.rpc(uart_areader, uart_awriter))
+    loop.run_until_complete(rpc.rpc(uart_areader, uart_awriter, context=g))
 
     # Reclaim memory associated with any temporary allocations.
     gc.collect()
-
-    g = globals()
-    g['wlan'] = wlan
-    g['motor_ctrl'] = motor.GroveMotorControl(i2c)

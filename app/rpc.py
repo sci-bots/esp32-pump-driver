@@ -4,7 +4,10 @@ import json
 import uasyncio as asyncio
 
 
-async def rpc(areader, awriter):
+async def rpc(areader, awriter, context=None):
+    if context is not None:
+        g = globals()
+        g.update(context)
     loop = asyncio.get_event_loop()
     stopped = False
     while not stopped:
@@ -16,6 +19,8 @@ async def rpc(areader, awriter):
             if command == '__stop__':
                 stopped = True
                 response = {'result': None}
+            elif command == '__globals__':
+                response = {'result': list(globals().keys())}
             elif command:
                 try:
                     func = eval(command)
