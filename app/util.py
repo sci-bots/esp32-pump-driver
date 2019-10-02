@@ -1,0 +1,43 @@
+import os
+import sys
+
+
+def exists(path):
+    try:
+        os.stat(path)
+        return True
+    except OSError:
+        return False
+
+
+def rmtree(directory):
+    for entry in os.ilistdir(directory):
+        is_dir = entry[1] == 0x4000
+        if is_dir:
+            rmtree(directory + '/' + entry[0])
+        else:
+            os.remove(directory + '/' + entry[0])
+    os.rmdir(directory)
+
+
+def copyfile(src_path, dst_path, chunk_size=1024):
+    with open(src_path, 'rb') as input_:
+        with open(dst_path, 'wb') as output:
+            while True:
+                data = input_.read(chunk_size)
+                output.write(data)
+                if not data:
+                    break
+
+
+def copytree(src_dir, dst_dir):
+    for entry in os.ilistdir(src_dir):
+        is_dir = entry[1] == 0x4000
+        src_path = src_dir + '/' + entry[0]
+        dst_path = dst_dir + '/' + entry[0]
+        if is_dir:
+            if not exists(dst_path):
+                os.mkdir(dst_path)
+            copytree(src_path, dst_path)
+        else:
+            copyfile(src_path, dst_path)
