@@ -157,8 +157,9 @@ with serial.Serial('COM18', baudrate=115200) as device:
 API_TOKEN = 'c8005277d02736892f49d9e5402b73ded68fba9d'
 
 with BackgroundSerialAsync(port='COM18', baudrate=115200) as adevice:
-# await aremote.call('ota.fetch_update', API_TOKEN, tag='v0.4')
-# print(await aremote.call('open("/ota-next/app/main.py").read'))
-# print(await aremote.call('gc.mem_free'))
-# remote.call('open("/VERSION").read')
-# remote.call('ota.swap', '/ota-previous', '', '/ota-next')
+    aremote = AsyncRemote(adevice)
+#     await aremote.call('ota.fetch_update', API_TOKEN, tag='v0.4')
+#     await aremote.call('ota.swap', '/ota-previous', '', '/ota-next')
+#     await aremote.call('open("/VERSION").read')
+#     print(await aremote.call('eval', 'dir(ota)'))
+    print(await aremote.call('ota.latest_version', API_TOKEN))
