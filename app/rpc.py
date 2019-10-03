@@ -6,8 +6,8 @@ import uasyncio as asyncio
 
 async def rpc(areader, awriter, context=None):
     if context is not None:
-        g = globals()
-        g.update(context)
+        globals().update(context)
+        print('Context:\n%s' % sorted(context.keys()))
     loop = asyncio.get_event_loop()
     stopped = False
     while not stopped:
@@ -20,7 +20,9 @@ async def rpc(areader, awriter, context=None):
                 stopped = True
                 response = {'result': None}
             elif command == '__globals__':
-                response = {'result': list(globals().keys())}
+                response = {'result': sorted(globals().keys())}
+            elif command == '__locals__':
+                response = {'result': sorted(locals().keys())}
             elif command:
                 try:
                     func = eval(command)
