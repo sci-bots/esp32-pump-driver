@@ -7,14 +7,20 @@ from wifimgr import get_connection
 from github import Repo
 
 
+USERNAME = 'sci-bots'
+REPO_URL = 'https://github.com/sci-bots/esp32-pump-driver'
+
+
+def latest_version(API_TOKEN):
+    repo = Repo(REPO_URL, api_token=API_TOKEN, username=USERNAME)
+    return repo.latest_version()
+
+
 def fetch_update(API_TOKEN, tag=None, output_dir='/ota-next', cache=False):
     # Try to connect to wifi
     wlan = get_connection()
     if wlan is None:
         raise RuntimeError('No network connection.')
-
-    USERNAME = 'sci-bots'
-    REPO_URL = 'https://github.com/sci-bots/esp32-pump-driver'
 
     if not util.exists(output_dir):
         os.mkdir(output_dir)
