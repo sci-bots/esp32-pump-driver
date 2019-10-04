@@ -43,8 +43,11 @@ class Repo:
         response = self.get(self.api_url + '/releases/latest', force=force)
 
         # Tag associated with release.
-        tag = response.json()['tag_name']
-        return tag
+        try:
+            tag = response.json()['tag_name']
+            return tag
+        except Exception:
+            raise RuntimeError('Error: `%s`' % response.json())
 
     def tag_contents(self, tag, path=''):
         response = self.get(self.api_url + '/contents' + path + '?ref=refs/tags/' + tag)
