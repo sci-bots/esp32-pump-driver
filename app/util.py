@@ -30,7 +30,7 @@ def copyfile(src_path, dst_path, chunk_size=1024):
                     break
 
 
-def copytree(src_dir, dst_dir):
+def copytree(src_dir, dst_dir, verbose=False):
     for entry in os.ilistdir(src_dir):
         is_dir = entry[1] == 0x4000
         src_path = src_dir + '/' + entry[0]
@@ -41,3 +41,5 @@ def copytree(src_dir, dst_dir):
             copytree(src_path, dst_path)
         else:
             copyfile(src_path, dst_path)
+            if verbose:
+                print('copied: `%s` to `%s`' % (src_path, dst_path))

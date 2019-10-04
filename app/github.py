@@ -43,14 +43,18 @@ class Repo:
         response = self.get(self.api_url + '/releases/latest', force=force)
 
         # Tag associated with release.
-        tag = response.json()['tag_name']
-        return tag
+        try:
+            tag = response.json()['tag_name']
+            return tag
+        except Exception:
+            raise RuntimeError('Error: `%s`' % response.json())
 
     def tag_contents(self, tag, path=''):
         response = self.get(self.api_url + '/contents' + path + '?ref=refs/tags/' + tag)
         return response.json()
 
-    def download(self, contents, root='', cache=False):
+    def download(self, contents, root='', cache=False, verbose=False):
+        downloaded = []
         for path in contents:
             if path['type'] == 'file':
                 url = path['download_url'].replace('/refs/tags', '')
@@ -58,13 +62,17 @@ class Repo:
                     print('mkdir: ' + root)
                     os.mkdir(root)
                 output_path = root + '/' + path['name'] if root else path['name']
-                print('download `%s`' % output_path)
+                if verbose:
+                    print('download `%s`' % output_path)
                 response = self.get(url, cache=cache)
                 with open(output_path, 'w') as output:
                     output.write(response.text)
+                downloaded.append(output_path)
             elif path['type'] == 'dir':
                 response = self.get(path['_links']['self'])
                 contents = response.json()
-                self.download(contents, root=(root + '/' if root else '')
-                              + '/' + path['name'])
+                downloaded += self.download(contents,
+                                            root=(root + '/' if root else '')
+                                            + '/' + path['name'])
             gc.collect()
+        return downloaded
