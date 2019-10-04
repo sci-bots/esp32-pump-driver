@@ -9,7 +9,13 @@ import uasyncio as asyncio
 import wifimgr
 
 
+LED_PIN = 22
+
+
 def main():
+    pin = Pin(LED_PIN, Pin.OUT)
+    pin.value(0)
+    
     # Attempt to connect to Wifi network.
     wlan = wifimgr.get_connection()
 
@@ -50,6 +56,10 @@ def main():
     gc.collect()
 
     loop = asyncio.get_event_loop()
+    
+    pin = Pin(LED_PIN, Pin.OUT)
+    pin.value(1)
+    
     # Start RPC task.
     loop.run_until_complete(rpc.rpc(uart_areader, uart_awriter,
                                     context=context))
