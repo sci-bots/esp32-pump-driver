@@ -31,16 +31,19 @@ def fetch_update(API_TOKEN, tag=None, output_dir='/ota-next', cache=False,
     if tag is None:
         tag = repo.latest_version()
 
+    downloaded = []
     for path in ('/app', '/lib'):
         contents = repo.tag_contents(tag, path=path)
         try:
-            repo.download(contents, root=output_dir + path, cache=cache,
-                          verbose=verbose)
+            downloaded += repo.download(contents, root=output_dir + path,
+                                        cache=cache, verbose=verbose)
         except Exception as exception:
             print('error fetching update: `%s`' % contents)
             raise
     with open(output_dir + '/VERSION', 'w') as output:
         output.write(tag + '\n')
+    gc.collect()
+    return downloaded
 
 
 def swap(previous, current, next_):
