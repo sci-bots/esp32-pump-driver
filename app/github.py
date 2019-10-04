@@ -53,7 +53,7 @@ class Repo:
         response = self.get(self.api_url + '/contents' + path + '?ref=refs/tags/' + tag)
         return response.json()
 
-    def download(self, contents, root='', cache=False):
+    def download(self, contents, root='', cache=False, verbose=False):
         for path in contents:
             if path['type'] == 'file':
                 url = path['download_url'].replace('/refs/tags', '')
@@ -61,7 +61,8 @@ class Repo:
                     print('mkdir: ' + root)
                     os.mkdir(root)
                 output_path = root + '/' + path['name'] if root else path['name']
-                print('download `%s`' % output_path)
+                if verbose:
+                    print('download `%s`' % output_path)
                 response = self.get(url, cache=cache)
                 with open(output_path, 'w') as output:
                     output.write(response.text)

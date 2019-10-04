@@ -16,7 +16,8 @@ def latest_version(API_TOKEN):
     return repo.latest_version()
 
 
-def fetch_update(API_TOKEN, tag=None, output_dir='/ota-next', cache=False):
+def fetch_update(API_TOKEN, tag=None, output_dir='/ota-next', cache=False,
+                 verbose=True):
     # Try to connect to wifi
     wlan = get_connection()
     if wlan is None:
@@ -33,7 +34,8 @@ def fetch_update(API_TOKEN, tag=None, output_dir='/ota-next', cache=False):
     for path in ('/app', '/lib'):
         contents = repo.tag_contents(tag, path=path)
         try:
-            repo.download(contents, root=output_dir + path, cache=cache)
+            repo.download(contents, root=output_dir + path, cache=cache,
+                          verbose=verbose)
         except Exception as exception:
             print('error fetching update: `%s`' % contents)
             raise
