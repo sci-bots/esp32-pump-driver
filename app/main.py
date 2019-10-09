@@ -1,7 +1,9 @@
 import gc
+import json
 
 from machine import Pin, I2C, UART
 import bootstrap
+import config
 import machine
 import motor
 import ota
@@ -11,13 +13,11 @@ import util
 import wifimgr
 
 
-LED_PIN = 22
-
-
 def main():
+    LED_PIN = config.CONFIG.get('led_pin', 13)
     pin = Pin(LED_PIN, Pin.OUT)
     pin.value(0)
-    
+
     # Attempt to connect to Wifi network.
     wlan = wifimgr.get_connection()
 
@@ -27,7 +27,10 @@ def main():
     uart_areader = asyncio.StreamReader(uart)
 
     # Bind I2C connection for controlling motor drivers
-    i2c = I2C(scl=Pin(5), sda=Pin(4), freq=100000)
+    i2c_config = config.CONFIG.get('i2c', {})
+    i2c = I2C(scl=Pin(i2c_config.get('scl', 22)),
+              sda=Pin(i2c_config.get('sda', 23)),
+              freq=i2c_config.get('freq', 10000))
 
     motor_ctrl = motor.GroveMotorControl(i2c)
 
@@ -58,13 +61,15 @@ def main():
     gc.collect()
 
     loop = asyncio.get_event_loop()
-    
+
     pin = Pin(LED_PIN, Pin.OUT)
     pin.value(1)
-    
+
     # Start RPC task.
     loop.run_until_complete(rpc.rpc(uart_areader, uart_awriter,
                                     context=context))
+
+    pin.value(0)
 
     # Reclaim memory associated with any temporary allocations.
     gc.collect()
