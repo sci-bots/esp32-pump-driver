@@ -1,4 +1,5 @@
 import gc
+import machine
 
 import uasyncio as asyncio
 
@@ -81,3 +82,12 @@ class GroveMotorControl:
             await asyncio.sleep_ms(off_ms)
         gc.collect()
         return address
+
+    def set_speed(self, address, speed_a, speed_b):
+        i2c_buffer = bytearray(4)
+        i2c_buffer[0] = MotorSpeedSet
+        i2c_buffer[1] = int(max(0, speed_a) * 255)
+        i2c_buffer[2] = int(max(0, speed_b) * 255)
+        i2c_buffer[-1] = Nothing
+        self.i2c.writeto(address, i2c_buffer)
+        gc.collect()
