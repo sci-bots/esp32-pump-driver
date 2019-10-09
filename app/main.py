@@ -2,10 +2,12 @@ import gc
 
 from machine import Pin, I2C, UART
 import bootstrap
+import machine
 import motor
 import ota
 import rpc
 import uasyncio as asyncio
+import util
 import wifimgr
 
 
