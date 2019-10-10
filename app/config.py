@@ -1,5 +1,7 @@
 import json
 
+import util
+
 
 def save():
     with open('config.json', 'w') as output:
@@ -7,9 +9,15 @@ def save():
 
 
 def load():
+    '''
+    .. versionchanged:: 0.8.1
+        Check if config file exists before trying to open it.
+    '''
     CONFIG.clear()
-    with open('config.json', 'r') as input_:
-        CONFIG.update(json.load(input_))
+    if util.exists('config.json'):
+        with open( 'r') as input_:
+            CONFIG.update(json.load(input_))
+
     return CONFIG
 
 
