@@ -19,7 +19,13 @@ server_socket = None
 
 
 def get_connection():
-    """return a working WLAN(STA_IF) instance or None"""
+    """return a working WLAN(STA_IF) instance or None
+
+    .. versionchanged:: 0.8.2
+        Do not start wifi configuration webserver if connection cannot be
+        established. Instead, leave it up to the calling code to execute
+        ``start()`` explicitly as needed.
+    """
 
     # First check if there already is any connection:
     if wlan_sta.isconnected():
@@ -39,7 +45,8 @@ def get_connection():
         wlan_sta.active(True)
         networks = wlan_sta.scan()
 
-        AUTHMODE = {0: "open", 1: "WEP", 2: "WPA-PSK", 3: "WPA2-PSK", 4: "WPA/WPA2-PSK"}
+        AUTHMODE = {0: "open", 1: "WEP", 2: "WPA-PSK", 3: "WPA2-PSK",
+                    4: "WPA/WPA2-PSK"}
         for network_i in sorted(networks, key=lambda x: x[3], reverse=True):
             ssid, bssid, channel, rssi, authmode, hidden =\
                 network_i
@@ -62,10 +69,6 @@ def get_connection():
 
     except OSError as e:
         print("exception", str(e))
-
-    # start web server for connection manager:
-    if not connected:
-        connected = start()
 
     return wlan_sta if connected else None
 
@@ -277,7 +280,8 @@ def start(port=80):
     server_socket.bind(addr)
     server_socket.listen(1)
 
-    print('Connect to WiFi ssid ' + ap_ssid + ', default password: ' + ap_password)
+    print('Connect to WiFi ssid ' + ap_ssid + ', default password: ' +
+          ap_password)
     print('and access the ESP via your favorite web browser at 192.168.4.1.')
     print('Listening on:', addr)
 
@@ -303,9 +307,11 @@ def start(port=80):
 
             # version 1.9 compatibility
             try:
-                url = ure.search("(?:GET|POST) /(.*?)(?:\\?.*?)? HTTP", request).group(1).decode("utf-8").rstrip("/")
+                url = ure.search("(?:GET|POST) /(.*?)(?:\\?.*?)? HTTP",
+                                 request).group(1).decode("utf-8").rstrip("/")
             except Exception:
-                url = ure.search("(?:GET|POST) /(.*?)(?:\\?.*?)? HTTP", request).group(1).rstrip("/")
+                url = ure.search("(?:GET|POST) /(.*?)(?:\\?.*?)? HTTP",
+                                 request).group(1).rstrip("/")
             print("URL is {}".format(url))
 
             if url == "":
