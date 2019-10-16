@@ -51,7 +51,7 @@ for p in serial.tools.list_ports.comports():
     except Exception:
         pass
 
-display([p for p in available_ports])
+print('available ports:', [p for p in available_ports])
 
 # +
 try:
@@ -88,11 +88,12 @@ async def init_i2c_grove_board(aremote):
 await asyncio.wait_for(init_i2c_grove_board(aremote), timeout=2)
 
 # +
-# Open file browser relative to parent directory.
+# # Debug tools
 def launch_file_manager():
     global file_manager_
     root_path = os.path.realpath('..')
     file_manager_ = aremote.file_manager(root_path)
+    file_manager_.setMinimumSize(1280, 720)
     file_manager_.show()
     return file_manager_
     
@@ -108,12 +109,11 @@ button_reset = ipw.Button(description='Reset ESP32')
 button_file_manager.on_click(lambda *args: launch_file_manager())
 button_reset.on_click(lambda *args: reset_esp32())
 
-ipw.HBox([button_file_manager, button_reset])
-# -
+hbox_debug = ipw.HBox([button_file_manager, button_reset])
 
-# -------------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
 
-# +
+# # Pump control
 loop = asyncio.get_event_loop()
 
 pumps = ('H20 -> CFA', 'CFA -> CFB', 'CFB -> CFA')
@@ -159,42 +159,11 @@ button_pump.on_click(ft.partial(on_multi_pump, 15, pulses))
 
 multi_pump_ui = ipw.HBox([checkboxes, pulses, button_pump])
 
-accordion = ipw.Accordion(children=[single_pump_ui, multi_pump_ui])
+accordion = ipw.Accordion(children=[single_pump_ui, multi_pump_ui, hbox_debug])
 accordion.set_title(0, 'Single pump')
 accordion.set_title(1, 'Multiple pumps')
+accordion.set_title(2, 'Debug')
 
 label = ipw.Label()
 
 ipw.VBox([accordion, label])
-# -
-
-# ------------------------------------------------------------------------
-
-# +
-import shutil
-import tempfile as tf
-
-import editor
-
-if platform.system() == 'Windows' and 'EDITOR' not in os.environ:
-    os.environ['EDITOR'] = 'notepad'
-
-# +
-async def view_remote(remote_path):
-    '''Open remote path in host text editor.'''
-    name = os.path.basename(remote_path)
-    tmp_dir = tf.mkdtemp(prefix='rpc_')
-    output_path = os.path.join(tmp_dir, name)
-    print(output_path, tmp_dir)
-    try:
-        await aremote.copy_rtol(remote_path, output_path)
-        print(output_path)
-        editor.edit(output_path)
-    finally:
-        shutil.rmtree(tmp_dir)
-
-# Run in background serial event loop.
-task = asyncio.run_coroutine_threadsafe(view_remote('/LICENSE'), adevice.loop)
-# -
-
-await aremote.flush()
