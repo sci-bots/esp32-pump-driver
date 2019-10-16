@@ -4,6 +4,7 @@
     * [Install MiniConda 3](#install-miniconda-3)
     * [Create Conda UI development environment](#create-conda-ui-development-environment)
 * [Pump control user interface (Jupyter notebook)](#pump-control-user-interface-jupyter-notebook)
+    * [Usage](#usage)
 * [Develop Firmware (Windows)](#develop-firmware-windows)
     * [Install requirements](#install-requirements)
     * [Flash MicroPython to ESP32 board](#flash-micropython-to-esp32-board)
@@ -39,7 +40,13 @@ cd esp32-pump-driver
 jupyter lab
 ```
 
-See screencast demonstrating usage of the pump UI notebook.
+## Usage
+
+1. Launch `notebooks/MicroPython RPC - pump UI.py` notebook
+2. Run all cells.
+3. Use IPython widgets to trigger pump actions:
+
+![](usage.gif)
 
 -------------------------------------------------------------------------------
 
