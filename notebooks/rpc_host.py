@@ -2,9 +2,15 @@
 .. versionadded:: X.X.X
 '''
 import asyncio
+import functools as ft
 import json
 import os
 import pathlib
+
+from PySide2 import QtWidgets
+
+from file_manager import (host_tree, RemoteFileTree, load_project_structure_,
+                          list_to_tree)
 
 
 class RemoteBase:
@@ -112,3 +118,56 @@ class AsyncRemote(RemoteBase):
         print('write %d bytes to: %s' % (len(data), local_path))
         with open(local_path, 'w') as output:
             output.write(data)
+
+    def file_manager(self, root_path='.'):
+        tree = host_tree(root_path)
+
+        remote_tree = RemoteFileTree()
+
+        widget = QtWidgets.QWidget()
+        combined = QtWidgets.QHBoxLayout()
+        combined.addWidget(tree)
+        combined.addWidget(remote_tree)
+        widget.setLayout(combined)
+
+        async def refresh_remote_tree():
+            file_info = await self.call('util.walk_files', '/')
+            model = remote_tree.model()
+            model.removeRows(0, model.rowCount())
+            main_dict = list_to_tree(sorted(file_info))
+            load_project_structure_(main_dict, remote_tree)
+            remote_tree.expandAll()
+
+
+        def on_copy_request(loop, sender, label, links):
+            relative_root = tree.model().filePath(tree.rootIndex())
+            async def wrapped():
+                remote_changed = False
+                for link in links:
+                    if link.startswith('remote:///'):
+                        source = link[len('remote://'):]
+                        print('copy `%s` to `%s`' % (source,
+                                                    relative_root + source))
+                        await self.copy_rtol(source, relative_root + source)
+                    elif link.startswith('file:///'):
+                        source = os.path.relpath(link[len('file:///'):],
+                                                relative_root)
+                        target = ('/' + source).replace('\\', '/')
+                        print('copy `%s` to `%s`' % (source, target))
+                        await self.copy_ltor(link[len('file:///'):], target)
+                        remote_changed = True
+                    else:
+                        print('no match: `%s`' % link)
+                if remote_changed:
+                    await refresh_remote_tree()
+
+            loop.call_soon_threadsafe(loop.create_task, wrapped())
+
+        loop = self.device.loop
+        tree.copy_request.connect(ft.partial(on_copy_request, loop, tree,
+                                             'local'))
+        remote_tree.copy_request.connect(ft.partial(on_copy_request, loop,
+                                                    remote_tree, 'remote'))
+
+        asyncio.run_coroutine_threadsafe(refresh_remote_tree(), loop)
+        return widget
