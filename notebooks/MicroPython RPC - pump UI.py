@@ -70,6 +70,7 @@ aremote = AsyncRemote(adevice)
 # Flush serial data to reach clean state.
 await asyncio.wait_for(aremote.flush(), timeout=4)
 
+# Show free memory (in bytes) on ESP32.
 display(await asyncio.wait_for(aremote.call('gc.mem_free'), timeout=2))
 
 async def init_i2c_grove_board(aremote):
@@ -87,73 +88,32 @@ async def init_i2c_grove_board(aremote):
 await asyncio.wait_for(init_i2c_grove_board(aremote), timeout=2)
 
 # +
-root_path = os.path.realpath('..')
-tree = host_tree(root_path)
-tree.show()
-
-relative_root = tree.model().filePath(tree.rootIndex())
-remote_tree = RemoteFileTree()
-remote_tree.show()
-
-widget = QtWidgets.QWidget()
-combined = QtWidgets.QHBoxLayout()
-combined.addWidget(tree)
-combined.addWidget(remote_tree)
-widget.setLayout(combined)
-widget.show()
+# Open file browser relative to parent directory.
+def launch_file_manager():
+    global file_manager_
+    root_path = os.path.realpath('..')
+    file_manager_ = aremote.file_manager(root_path)
+    file_manager_.show()
+    return file_manager_
+    
+def reset_esp32():
+    future = asyncio.run_coroutine_threadsafe(aremote.reset(), adevice.loop)
+    future.add_done_callback(lambda f: print('Reset successful (%d bytes free)' %
+                                             f.result()))
 
 
-async def refresh_remote_tree():
-    file_info = await aremote.call('util.walk_files', '/')
-    model = remote_tree.model()
-    model.removeRows(0, model.rowCount())
-    main_dict = list_to_tree(sorted(file_info))
-    load_project_structure_(main_dict, remote_tree)
-    remote_tree.expandAll()
+button_file_manager = ipw.Button(description='File manager')
+button_reset = ipw.Button(description='Reset ESP32')
 
+button_file_manager.on_click(lambda *args: launch_file_manager())
+button_reset.on_click(lambda *args: reset_esp32())
 
-def on_copy_request(loop, sender, label, links):
-    relative_root = tree.model().filePath(tree.rootIndex())
-    async def wrapped():
-        remote_changed = False
-        for link in links:
-            if link.startswith('remote:///'):
-                source = link[len('remote://'):]
-                print('copy `%s` to `%s`' % (source,
-                                             relative_root + source))
-                await aremote.copy_rtol(source, relative_root + source)
-            elif link.startswith('file:///'):
-                source = os.path.relpath(link[len('file:///'):],
-                                         relative_root)
-                target = ('/' + source).replace('\\', '/')
-                print('copy `%s` to `%s`' % (source, target))
-                await aremote.copy_ltor(link[len('file:///'):], target)
-                remote_changed = True
-            else:
-                print('no match: `%s`' % link)
-        if remote_changed:
-            await refresh_remote_tree()
-        
-    loop.call_soon_threadsafe(loop.create_task, wrapped())
-            
-loop = aremote.device.loop
-tree.copy_request.connect(ft.partial(on_copy_request, loop, tree, 'local'))
-remote_tree.copy_request.connect(ft.partial(on_copy_request, loop, remote_tree, 'remote'))
-
-asyncio.run_coroutine_threadsafe(refresh_remote_tree(), loop)
-
-# +
-# future = asyncio.run_coroutine_threadsafe(aremote.reset(), adevice.loop)
-# future.add_done_callback(lambda f: print('Reset successful (%d bytes free)' %
-#                                          f.result()))
+ipw.HBox([button_file_manager, button_reset])
 # -
 
 # -------------------------------------------------------------------------------
 
 # +
-import ipywidgets as ipw
-
-
 loop = asyncio.get_event_loop()
 
 pumps = ('H20 -> CFA', 'CFA -> CFB', 'CFB -> CFA')
