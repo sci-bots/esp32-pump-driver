@@ -14,38 +14,106 @@
 # ---
 
 # +
+from __future__ import print_function, division
 import asyncio
 import functools as ft
 import json
+import logging
+import os
 import platform
 import sys
 import threading
 import time
+logging.basicConfig(level=logging.INFO)
 
+from PySide2 import QtGui, QtCore, QtWidgets
 from asyncserial import BackgroundSerialAsync
 from rpc_host import AsyncRemote
 import asyncserial
 import ipywidgets as ipw
+import serial
+import serial.tools.list_ports
 
-try:
-    adevice.close()
-    time.sleep(.5)
-except:
-    pass
+# Enable Qt support for Jupyter.
+# %gui qt5
 
-adevice = BackgroundSerialAsync(port='COM3', baudrate=115200)
-aremote = AsyncRemote(adevice)
+# Local imports
+from file_manager import host_tree, RemoteFileTree, load_project_structure_, list_to_tree, copy
 
-await aremote.call('gc.mem_free')
+# Get list of serial ports that are available for use (i.e., can be opened successfully).
+available_ports = []
 
-# Turn off all pump outputs.
-for i in range(4):
-    await aremote.call('motor_ctrl.set_direction', 15, i, False)
-# Set all pump outputs to 100% duty cycle. This lets the pulsing code
-# determine on/off durations for pump outputs.
-await aremote.call('motor_ctrl.set_speed', 15, 1, 1)
+for p in serial.tools.list_ports.comports():
+    try:
+        device = serial.Serial(p.device)
+        device.close()
+        available_ports.append(p.device)
+    except Exception:
+        pass
+
+print('available ports:', [p for p in available_ports])
 
 # +
+try:
+    global adevice
+    adevice.close()
+    time.sleep(0.5)
+    if adevice.device.ser.port not in available_ports:
+        available_ports.append(adevice.device.ser.port)
+except Exception as exception:
+    print(exception)
+
+port = available_ports[0]
+adevice = BackgroundSerialAsync(port=port, baudrate=115200)
+aremote = AsyncRemote(adevice)
+
+# Flush serial data to reach clean state.
+await asyncio.wait_for(aremote.flush(), timeout=4)
+
+# Show free memory (in bytes) on ESP32.
+display(await asyncio.wait_for(aremote.call('gc.mem_free'), timeout=2))
+
+async def init_i2c_grove_board(aremote):
+    try:
+        # Turn off all pump outputs.
+        for i in range(4):
+            await aremote.call('motor_ctrl.set_direction', 15, i, False)
+        # Set all pump outputs to 100% duty cycle. This lets the pulsing code
+        # determine on/off durations for pump outputs.
+        await aremote.call('motor_ctrl.set_speed', 15, 1, 1)
+    except RuntimeError as exception:
+        if 'ETIMEDOUT' in str(exception):
+            raise RuntimeError('Error communicating with I2C motor grove.')
+
+await asyncio.wait_for(init_i2c_grove_board(aremote), timeout=2)
+
+# +
+# # Debug tools
+def launch_file_manager():
+    global file_manager_
+    root_path = os.path.realpath('..')
+    file_manager_ = aremote.file_manager(root_path)
+    file_manager_.setMinimumSize(1280, 720)
+    file_manager_.show()
+    return file_manager_
+    
+def reset_esp32():
+    future = asyncio.run_coroutine_threadsafe(aremote.reset(), adevice.loop)
+    future.add_done_callback(lambda f: print('Reset successful (%d bytes free)' %
+                                             f.result()))
+
+
+button_file_manager = ipw.Button(description='File manager')
+button_reset = ipw.Button(description='Reset ESP32')
+
+button_file_manager.on_click(lambda *args: launch_file_manager())
+button_reset.on_click(lambda *args: reset_esp32())
+
+hbox_debug = ipw.HBox([button_file_manager, button_reset])
+
+# -----------------------------------------------------------------------------
+
+# # Pump control
 loop = asyncio.get_event_loop()
 
 pumps = ('H20 -> CFA', 'CFA -> CFB', 'CFB -> CFA')
@@ -91,12 +159,11 @@ button_pump.on_click(ft.partial(on_multi_pump, 15, pulses))
 
 multi_pump_ui = ipw.HBox([checkboxes, pulses, button_pump])
 
-accordion = ipw.Accordion(children=[single_pump_ui, multi_pump_ui])
+accordion = ipw.Accordion(children=[single_pump_ui, multi_pump_ui, hbox_debug])
 accordion.set_title(0, 'Single pump')
 accordion.set_title(1, 'Multiple pumps')
+accordion.set_title(2, 'Debug')
 
 label = ipw.Label()
 
 ipw.VBox([accordion, label])
-# -
-
