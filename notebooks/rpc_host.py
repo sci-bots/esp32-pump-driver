@@ -1,5 +1,5 @@
 '''
-.. versionadded:: X.X.X
+.. versionadded:: 0.11.0
 '''
 import asyncio
 import functools as ft
