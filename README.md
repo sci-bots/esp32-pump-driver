@@ -22,7 +22,7 @@ Start a command prompt or Powershell session and run the following:
 
 ```sh
 conda init  # Initialize shell support for Conda
-conda create -n esp32-pump -c conda-forge -c sci-bots nodejs astroid ecdsa isort lazy-object-proxy mccabe pylint pyserial typing websocket-client pyserial six jupyter notebook jupyterlab jupytext autopep8 ipywidgets asyncserial pyaes
+conda create -n esp32-pump -c conda-forge -c sci-bots nodejs astroid ecdsa isort lazy-object-proxy mccabe pylint pyserial typing websocket-client pyserial six jupyter notebook jupyterlab jupytext autopep8 ipywidgets asyncserial pyaes pyside2
 conda activate esp32-pump
 conda config --env --append channels conda-forge
 jupyter labextension install @jupyter-widgets/jupyterlab-manager
@@ -61,8 +61,8 @@ python -m mpy_kernel.install
 
 ## Flash MicroPython to ESP32 board
 
-1. Download the latest MicroPython for ESP32 [here][1] to `~\Downloads` (e.g.,
-   `C:\Users\christian\Downloads`).
+1. Download the latest MicroPython for ESP32 [here][esp32-micropython] to
+   `~\Downloads` (e.g., `C:\Users\christian\Downloads`).
 2. Start a **Powershell session** and run the following:
 
 ```sh
