@@ -6,6 +6,26 @@ DIR = 0x4000
 FILE = 0x8000
 
 
+def read_at(path, offset=0, n=None):
+    '''Read from file at specified offset.
+
+    Parameters
+    ----------
+    path : str
+        Path of file to read.
+    offset : int, optional
+        Offset from start of file (in bytes).
+    n : int, optional
+        Number of bytes to read. By default, read to end of file.
+
+
+    .. versionadded:: X.X.X
+    '''
+    with open(path, 'r') as input_:
+        input_.seek(offset)
+        return input_.read(n)
+
+
 def exists(path):
     try:
         os.stat(path)
