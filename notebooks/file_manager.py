@@ -58,7 +58,7 @@ def host_tree(root_path='.'):
     model.setRootPath(root_path)
     tree.setModel(model)
     tree.setSortingEnabled(True)
-    tree.setRootIndex(model.index(QtCore.QDir.currentPath()))
+    tree.setRootIndex(model.index(root_path))
     tree.setSelectionMode(QtWidgets.QAbstractItemView.ExtendedSelection)
     tree.setDragDropMode(QtWidgets.QAbstractItemView.DragDrop)
     tree.setDropIndicatorShown(True)
