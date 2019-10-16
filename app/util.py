@@ -1,8 +1,8 @@
 import os
 
-#:  .. versionadded:: X.X.X
+#:  .. versionadded:: 0.10.0
 DIR = 0x4000
-#:  .. versionadded:: X.X.X
+#:  .. versionadded:: 0.10.0
 FILE = 0x8000
 
 
@@ -19,7 +19,7 @@ def read_at(path, offset=0, n=None):
         Number of bytes to read. By default, read to end of file.
 
 
-    .. versionadded:: X.X.X
+    .. versionadded:: 0.10.0
     '''
     with open(path, 'r') as input_:
         input_.seek(offset)
@@ -35,7 +35,7 @@ def exists(path):
 
 
 def is_dir(path):
-    '''.. versionadded:: X.X.X'''
+    '''.. versionadded:: 0.10.0'''
     try:
         return True if os.stat(path)[0] & DIR else False
     except OSError:
@@ -43,7 +43,7 @@ def is_dir(path):
 
 
 def is_file(path):
-    '''.. versionadded:: X.X.X'''
+    '''.. versionadded:: 0.10.0'''
     try:
         return True if os.stat(path)[0] & FILE else False
     except OSError:
@@ -89,7 +89,7 @@ def walk_files(top):
     '''Return a list of full paths, one to each file under specified dir.
 
 
-    .. versionadded:: X.X.X
+    .. versionadded:: 0.10.0
     '''
     paths = []
     top_ = '' if top == '/' else top
@@ -106,6 +106,6 @@ def walk_stat(top):
     '''Return a list of stat tuples, one to each file under specified dir.
 
 
-    .. versionadded:: X.X.X
+    .. versionadded:: 0.10.0
     '''
     return [(p, ) + os.stat(p) for p in walk_files(top)]
