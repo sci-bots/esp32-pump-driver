@@ -83,3 +83,29 @@ def copytree(src_dir, dst_dir, verbose=False):
             copyfile(src_path, dst_path)
             if verbose:
                 print('copied: `%s` to `%s`' % (src_path, dst_path))
+
+
+def walk_files(top):
+    '''Return a list of full paths, one to each file under specified dir.
+
+
+    .. versionadded:: X.X.X
+    '''
+    paths = []
+    top_ = '' if top == '/' else top
+    for p in os.listdir(top):
+        full_p = top_ + '/' + p
+        if is_dir(full_p):
+            paths += [p_i for p_i in walk_files(full_p)]
+        elif is_file(full_p):
+            paths.append(full_p)
+    return paths
+
+
+def walk_stat(top):
+    '''Return a list of stat tuples, one to each file under specified dir.
+
+
+    .. versionadded:: X.X.X
+    '''
+    return [(p, ) + os.stat(p) for p in walk_files(top)]
