@@ -1,11 +1,51 @@
 import os
-import sys
+
+#:  .. versionadded:: X.X.X
+DIR = 0x4000
+#:  .. versionadded:: X.X.X
+FILE = 0x8000
+
+
+def read_at(path, offset=0, n=None):
+    '''Read from file at specified offset.
+
+    Parameters
+    ----------
+    path : str
+        Path of file to read.
+    offset : int, optional
+        Offset from start of file (in bytes).
+    n : int, optional
+        Number of bytes to read. By default, read to end of file.
+
+
+    .. versionadded:: X.X.X
+    '''
+    with open(path, 'r') as input_:
+        input_.seek(offset)
+        return input_.read(n)
 
 
 def exists(path):
     try:
         os.stat(path)
         return True
+    except OSError:
+        return False
+
+
+def is_dir(path):
+    '''.. versionadded:: X.X.X'''
+    try:
+        return True if os.stat(path)[0] & DIR else False
+    except OSError:
+        return False
+
+
+def is_file(path):
+    '''.. versionadded:: X.X.X'''
+    try:
+        return True if os.stat(path)[0] & FILE else False
     except OSError:
         return False
 
@@ -43,3 +83,29 @@ def copytree(src_dir, dst_dir, verbose=False):
             copyfile(src_path, dst_path)
             if verbose:
                 print('copied: `%s` to `%s`' % (src_path, dst_path))
+
+
+def walk_files(top):
+    '''Return a list of full paths, one to each file under specified dir.
+
+
+    .. versionadded:: X.X.X
+    '''
+    paths = []
+    top_ = '' if top == '/' else top
+    for p in os.listdir(top):
+        full_p = top_ + '/' + p
+        if is_dir(full_p):
+            paths += [p_i for p_i in walk_files(full_p)]
+        elif is_file(full_p):
+            paths.append(full_p)
+    return paths
+
+
+def walk_stat(top):
+    '''Return a list of stat tuples, one to each file under specified dir.
+
+
+    .. versionadded:: X.X.X
+    '''
+    return [(p, ) + os.stat(p) for p in walk_files(top)]
