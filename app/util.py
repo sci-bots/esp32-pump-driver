@@ -1,11 +1,31 @@
 import os
-import sys
+
+#:  .. versionadded:: X.X.X
+DIR = 0x4000
+#:  .. versionadded:: X.X.X
+FILE = 0x8000
 
 
 def exists(path):
     try:
         os.stat(path)
         return True
+    except OSError:
+        return False
+
+
+def is_dir(path):
+    '''.. versionadded:: X.X.X'''
+    try:
+        return True if os.stat(path)[0] & DIR else False
+    except OSError:
+        return False
+
+
+def is_file(path):
+    '''.. versionadded:: X.X.X'''
+    try:
+        return True if os.stat(path)[0] & FILE else False
     except OSError:
         return False
 
