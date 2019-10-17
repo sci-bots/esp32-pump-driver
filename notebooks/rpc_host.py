@@ -49,7 +49,8 @@ class AsyncRemote(RemoteBase):
         with await self.lock:
             await self.device.write(json.dumps(message).encode('utf8') +
                                     b'\r\n')
-            response = json.loads(await self.device.readline())
+            response_bytes = await self.device.readline()
+            response = json.loads(response_bytes.decode('utf8'))
         if 'error' in response:
             raise RuntimeError('Error: `%s`' % response['error'])
         return response['result']
