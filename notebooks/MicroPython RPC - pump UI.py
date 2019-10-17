@@ -69,7 +69,7 @@ adevice = BackgroundSerialAsync(port=uart2_port.device, baudrate=115200)
 aremote = AsyncRemote(adevice)
 
 # Flush serial data to reach clean state.
-await asyncio.wait_for(aremote.flush(), timeout=4)
+# await asyncio.wait_for(aremote.flush(), timeout=4)
 
 # Show free memory (in bytes) on ESP32.
 display(await asyncio.wait_for(aremote.call('gc.mem_free'), timeout=2))
