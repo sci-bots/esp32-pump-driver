@@ -100,9 +100,13 @@ def launch_file_manager():
     
 def reset_esp32():
     future = asyncio.run_coroutine_threadsafe(aremote.reset(), adevice.loop)
-    future.add_done_callback(lambda f: print('Reset successful (%d bytes free)' %
-                                             f.result()))
 
+    def on_done(f):
+        print('Reset successful (%d bytes free)' % f.result())
+        asyncio.run_coroutine_threadsafe(asyncio.wait_for(init_i2c_grove_board(aremote),
+                                                          timeout=4),
+                                         aremote.device.loop)
+    future.add_done_callback(on_done)
 
 debug_buttons = []
 
