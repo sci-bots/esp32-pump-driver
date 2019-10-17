@@ -42,28 +42,30 @@ except:
 # Get list of serial ports that are available for use (i.e., can be opened successfully).
 available_ports = []
 
-for p in serial.tools.list_ports.comports():
-    try:
-        device = serial.Serial(p.device)
-        device.close()
-        available_ports.append(p.device)
-    except Exception:
-        pass
 
-print('available ports:', [p for p in available_ports])
+def get_port(vid, pid):
+    try:
+        port = next(p for p in serial.tools.list_ports.comports()
+                    if p.vid == vid and p.pid == pid)
+    except StopIteration:
+        raise IOError('No matching port found.')
+    device = serial.Serial(port.device)
+    device.close()
+    return port
+
 
 # +
 try:
     global adevice
     adevice.close()
     time.sleep(0.5)
-    if adevice.device.ser.port not in available_ports:
-        available_ports.append(adevice.device.ser.port)
 except Exception as exception:
     print(exception)
 
-port = available_ports[0]
-adevice = BackgroundSerialAsync(port=port, baudrate=115200)
+# uart0_port = get_port(vid=0x1A86, pid=0x7523)
+uart2_port = get_port(vid=0x0403, pid=0x6015)
+print('found uart2 port: %s' % uart2_port.device)
+adevice = BackgroundSerialAsync(port=uart2_port.device, baudrate=115200)
 aremote = AsyncRemote(adevice)
 
 # Flush serial data to reach clean state.
