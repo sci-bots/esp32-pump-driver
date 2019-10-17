@@ -26,19 +26,18 @@ import threading
 import time
 logging.basicConfig(level=logging.INFO)
 
-from PySide2 import QtGui, QtCore, QtWidgets
 from asyncserial import BackgroundSerialAsync
 from rpc_host import AsyncRemote
 import asyncserial
 import ipywidgets as ipw
 import serial
 import serial.tools.list_ports
-
-# Enable Qt support for Jupyter.
-# %gui qt5
-
-# Local imports
-from file_manager import host_tree, RemoteFileTree, load_project_structure_, list_to_tree, copy
+try:
+    from PySide2 import QtGui, QtCore, QtWidgets
+    # Enable Qt support for Jupyter.
+    %gui qt5
+except:
+    pass
 
 # Get list of serial ports that are available for use (i.e., can be opened successfully).
 available_ports = []
@@ -103,13 +102,20 @@ def reset_esp32():
                                              f.result()))
 
 
-button_file_manager = ipw.Button(description='File manager')
+debug_buttons = []
+
 button_reset = ipw.Button(description='Reset ESP32')
-
-button_file_manager.on_click(lambda *args: launch_file_manager())
 button_reset.on_click(lambda *args: reset_esp32())
+debug_buttons.append(button_reset)
+try:
+    QtCore
+    button_file_manager = ipw.Button(description='File manager')
+    button_file_manager.on_click(lambda *args: launch_file_manager())
+    debug_buttons.append(button_file_manager)
+except:
+    pass
 
-hbox_debug = ipw.HBox([button_file_manager, button_reset])
+hbox_debug = ipw.HBox(debug_buttons)
 
 # -----------------------------------------------------------------------------
 

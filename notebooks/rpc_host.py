@@ -7,11 +7,6 @@ import json
 import os
 import pathlib
 
-from PySide2 import QtWidgets
-
-from file_manager import (host_tree, RemoteFileTree, load_project_structure_,
-                          list_to_tree)
-
 
 class RemoteBase:
     def __init__(self, device):
@@ -120,6 +115,11 @@ class AsyncRemote(RemoteBase):
             output.write(data)
 
     def file_manager(self, root_path='.'):
+        from PySide2 import QtWidgets
+
+        from file_manager import (host_tree, RemoteFileTree,
+                                  load_project_structure_, list_to_tree)
+
         tree = host_tree(root_path)
 
         remote_tree = RemoteFileTree()
