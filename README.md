@@ -62,6 +62,7 @@ Start a **Powershell session** and run the following:
 ```sh
 conda activate esp32-pump
 pip install esptool
+pip install ampy
 pip install jupyterlab_micropython_remote
 python -m mpy_kernel.install
 ```
@@ -80,6 +81,10 @@ $ESP_PORT = $(python -c "import serial.tools.list_ports as lp; print('\\n'.join(
 $ESP_MICROPYTHON = "$(Resolve-Path ~\Downloads\esp32*.bin | Sort-Object -Descending | Select-Object -first 1)"
 esptool --port $ESP_PORT --baud 460800 erase_flash
 esptool --port $ESP_PORT --baud 460800 --chip esp32 write_flash -z 0x1000 $ESP_MICROPYTHON
+# Bootstrap with code
+ampy -p $ESP_PORT put lib
+ampy -p $ESP_PORT put app
+ampy -p $ESP_PORT put boot.py
 ```
 
 Note that the code above assumes that the `$ESP_PORT` and `$ESP_MICROPYTHON`

@@ -85,7 +85,7 @@ async def init_i2c_grove_board(aremote):
         if 'ETIMEDOUT' in str(exception):
             raise RuntimeError('Error communicating with I2C motor grove.')
 
-await asyncio.wait_for(init_i2c_grove_board(aremote), timeout=2)
+# await asyncio.wait_for(init_i2c_grove_board(aremote), timeout=2)
 
 # +
 # # Debug tools
