@@ -55,6 +55,8 @@ jupyter lab
 The following instructions are only required if you plan to modify the code
 running on the ESP32 (not required for pump user interface).
 
+See [`README-rpi.md`][[README-rpi.md] for instructions for the Raspberry Pi 3.
+
 ## Install requirements
 
 Start a **Powershell session** and run the following:
@@ -62,9 +64,8 @@ Start a **Powershell session** and run the following:
 ```sh
 conda activate esp32-pump
 pip install esptool
-pip install ampy
-pip install jupyterlab_micropython_remote
-python -m mpy_kernel.install
+pip install mpy-repl-tool
+python -m there.jupyter-setup
 ```
 
 ## Flash MicroPython to ESP32 board
@@ -82,10 +83,14 @@ $ESP_MICROPYTHON = "$(Resolve-Path ~\Downloads\esp32*.bin | Sort-Object -Descend
 esptool --port $ESP_PORT --baud 460800 erase_flash
 esptool --port $ESP_PORT --baud 460800 --chip esp32 write_flash -z 0x1000 $ESP_MICROPYTHON
 # Bootstrap with code
-ampy -p $ESP_PORT put lib
-ampy -p $ESP_PORT put app
-ampy -p $ESP_PORT put boot.py
+python -m there ls
+python -m there push -r lib /
+python -m there push -r app /
+python -m there push -r boot.py /
 ```
+3. Reset board and display serial output: `python -m there --reset -i`
+ - Press `Ctrl+C` to enter read/execute/print loop (i.e., REPL).
+ - Press `Ctrl+]` to quit.
 
 Note that the code above assumes that the `$ESP_PORT` and `$ESP_MICROPYTHON`
 environment variables are set to the serial port and the MicroPython firmware
