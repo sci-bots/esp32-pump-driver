@@ -55,7 +55,7 @@ jupyter lab
 The following instructions are only required if you plan to modify the code
 running on the ESP32 (not required for pump user interface).
 
-See [`README-rpi.md`][[README-rpi.md] for instructions for the Raspberry Pi 3.
+See [`README-rpi.md`](README-rpi.md) for instructions for the Raspberry Pi 3.
 
 ## Install requirements
 
