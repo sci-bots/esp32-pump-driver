@@ -7,11 +7,6 @@ import json
 import os
 import pathlib
 
-from PySide2 import QtWidgets
-
-from file_manager import (host_tree, RemoteFileTree, load_project_structure_,
-                          list_to_tree)
-
 
 class RemoteBase:
     def __init__(self, device):
@@ -54,7 +49,8 @@ class AsyncRemote(RemoteBase):
         with await self.lock:
             await self.device.write(json.dumps(message).encode('utf8') +
                                     b'\r\n')
-            response = json.loads(await self.device.readline())
+            response_bytes = await self.device.readline()
+            response = json.loads(response_bytes.decode('utf8'))
         if 'error' in response:
             raise RuntimeError('Error: `%s`' % response['error'])
         return response['result']
@@ -120,6 +116,11 @@ class AsyncRemote(RemoteBase):
             output.write(data)
 
     def file_manager(self, root_path='.'):
+        from PySide2 import QtWidgets
+
+        from file_manager import (host_tree, RemoteFileTree,
+                                  load_project_structure_, list_to_tree)
+
         tree = host_tree(root_path)
 
         remote_tree = RemoteFileTree()

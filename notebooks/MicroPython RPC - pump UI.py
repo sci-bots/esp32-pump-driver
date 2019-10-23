@@ -26,49 +26,50 @@ import threading
 import time
 logging.basicConfig(level=logging.INFO)
 
-from PySide2 import QtGui, QtCore, QtWidgets
 from asyncserial import BackgroundSerialAsync
 from rpc_host import AsyncRemote
 import asyncserial
 import ipywidgets as ipw
 import serial
 import serial.tools.list_ports
-
-# Enable Qt support for Jupyter.
-# %gui qt5
-
-# Local imports
-from file_manager import host_tree, RemoteFileTree, load_project_structure_, list_to_tree, copy
+try:
+    from PySide2 import QtGui, QtCore, QtWidgets
+    # Enable Qt support for Jupyter.
+    %gui qt5
+except:
+    pass
 
 # Get list of serial ports that are available for use (i.e., can be opened successfully).
 available_ports = []
 
-for p in serial.tools.list_ports.comports():
-    try:
-        device = serial.Serial(p.device)
-        device.close()
-        available_ports.append(p.device)
-    except Exception:
-        pass
 
-print('available ports:', [p for p in available_ports])
+def get_port(vid, pid):
+    try:
+        port = next(p for p in serial.tools.list_ports.comports()
+                    if p.vid == vid and p.pid == pid)
+    except StopIteration:
+        raise IOError('No matching port found.')
+    device = serial.Serial(port.device)
+    device.close()
+    return port
+
 
 # +
 try:
     global adevice
     adevice.close()
     time.sleep(0.5)
-    if adevice.device.ser.port not in available_ports:
-        available_ports.append(adevice.device.ser.port)
 except Exception as exception:
     print(exception)
 
-port = available_ports[0]
-adevice = BackgroundSerialAsync(port=port, baudrate=115200)
+# uart0_port = get_port(vid=0x1A86, pid=0x7523)
+uart2_port = get_port(vid=0x0403, pid=0x6015)
+print('found uart2 port: %s' % uart2_port.device)
+adevice = BackgroundSerialAsync(port=uart2_port.device, baudrate=115200)
 aremote = AsyncRemote(adevice)
 
 # Flush serial data to reach clean state.
-await asyncio.wait_for(aremote.flush(), timeout=4)
+# await asyncio.wait_for(aremote.flush(), timeout=4)
 
 # Show free memory (in bytes) on ESP32.
 display(await asyncio.wait_for(aremote.call('gc.mem_free'), timeout=2))
@@ -99,17 +100,28 @@ def launch_file_manager():
     
 def reset_esp32():
     future = asyncio.run_coroutine_threadsafe(aremote.reset(), adevice.loop)
-    future.add_done_callback(lambda f: print('Reset successful (%d bytes free)' %
-                                             f.result()))
 
+    def on_done(f):
+        print('Reset successful (%d bytes free)' % f.result())
+        asyncio.run_coroutine_threadsafe(asyncio.wait_for(init_i2c_grove_board(aremote),
+                                                          timeout=4),
+                                         aremote.device.loop)
+    future.add_done_callback(on_done)
 
-button_file_manager = ipw.Button(description='File manager')
+debug_buttons = []
+
 button_reset = ipw.Button(description='Reset ESP32')
-
-button_file_manager.on_click(lambda *args: launch_file_manager())
 button_reset.on_click(lambda *args: reset_esp32())
+debug_buttons.append(button_reset)
+try:
+    QtCore
+    button_file_manager = ipw.Button(description='File manager')
+    button_file_manager.on_click(lambda *args: launch_file_manager())
+    debug_buttons.append(button_file_manager)
+except:
+    pass
 
-hbox_debug = ipw.HBox([button_file_manager, button_reset])
+hbox_debug = ipw.HBox(debug_buttons)
 
 # -----------------------------------------------------------------------------
 
