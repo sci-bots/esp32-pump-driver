@@ -15,6 +15,7 @@
 
 # +
 from __future__ import print_function, division
+from collections import OrderedDict
 import asyncio
 import functools as ft
 import json
@@ -62,23 +63,19 @@ try:
 except Exception as exception:
     print(exception)
 
-# uart0_port = get_port(vid=0x1A86, pid=0x7523)
+# Get serial port connected to UART2 on Huzzah32 ESP32 board.
 uart2_port = get_port(vid=0x0403, pid=0x6015)
 print('found uart2 port: %s' % uart2_port.device)
+
 adevice = BackgroundSerialAsync(port=uart2_port.device, baudrate=115200)
 aremote = AsyncRemote(adevice)
-
-# Flush serial data to reach clean state.
-# await asyncio.wait_for(aremote.flush(), timeout=4)
-
-# Show free memory (in bytes) on ESP32.
-display(await asyncio.wait_for(aremote.call('gc.mem_free'), timeout=2))
 
 async def init_i2c_grove_board(aremote):
     try:
         # Turn off all pump outputs.
         for i in range(4):
             await aremote.call('motor_ctrl.set_direction', 15, i, False)
+            await aremote.call('gc.collect')
         # Set all pump outputs to 100% duty cycle. This lets the pulsing code
         # determine on/off durations for pump outputs.
         await aremote.call('motor_ctrl.set_speed', 15, 1, 1)
@@ -86,9 +83,27 @@ async def init_i2c_grove_board(aremote):
         if 'ETIMEDOUT' in str(exception):
             raise RuntimeError('Error communicating with I2C motor grove.')
 
-# await asyncio.wait_for(init_i2c_grove_board(aremote), timeout=2)
+async def init():
+    # Show free memory (in bytes) on ESP32.
+    await init_i2c_grove_board(aremote)
+    return (await aremote.call('gc.mem_free'))
+            
+    
+await init()
 
 # +
+# # Configuration
+
+# For each pump and valve:
+#  - `addr`: I2C address of corresponding Grove motor control board
+#  - `index`: output index (0-3) within the Grove motor control board
+pumps = OrderedDict([('1', {'addr': 15, 'index': 0}),
+                     ('2', {'addr': 15, 'index': 1})])
+valves = OrderedDict([('i', {'addr': 15, 'index': 2}),
+                      ('ii', {'addr': 15, 'index': 3})])
+
+# -----------------------------------------------------------------------------
+
 # # Debug tools
 def launch_file_manager():
     global file_manager_
@@ -128,9 +143,6 @@ hbox_debug = ipw.HBox(debug_buttons)
 # # Pump control
 loop = asyncio.get_event_loop()
 
-pumps = ('H20 -> CFA', 'CFA -> CFB', 'CFB -> CFA')
-pumps_help = ('Water to Cell-free A', 'Cell-free A -> Cell-free B', 'Cell-free B -> Cell-free A')
-
 # Single pump UI (i.e., one button per pump); can still run more than one at a time
 def do_pump(addr, index, pulses, *args, **kwargs):
     loop = asyncio.get_event_loop()
@@ -146,10 +158,10 @@ def set_direction(addr, index, on, *args, **kwargs):
     
     
 buttons = []
-for i, (label, help_i) in enumerate(zip(pumps, pumps_help)):
-    button_i = ipw.Button(description='Pump %s' % label, tooltip=help_i)
+for name_i, pump_i in pumps.items():
+    button_i = ipw.Button(description='Pump %s' % name_i)
     pulses_i = ipw.IntSlider(min=0, max=125, value=25, description='Pulses')
-    button_i.on_click(ft.partial(do_pump, 15, i, pulses_i))
+    button_i.on_click(ft.partial(do_pump, pump_i['addr'], pump_i['index'], pulses_i))
     buttons.append(ipw.HBox([button_i, pulses_i]))
     
 single_pump_ui = ipw.VBox(buttons)
@@ -160,14 +172,16 @@ button_pump = ipw.Button(description='Pump', tooltip='''
 1) Use checkboxes to select one or more pumps.
 2) Select number of pulses.
 3) Click here to execute pulses.'''.strip())
-checkboxes = ipw.VBox([ipw.Checkbox(description=p, index=True) for p in pumps])
+checkboxes = ipw.VBox([ipw.Checkbox(description=name_i, index=True)
+                       for name_i in pumps])
 
-def on_multi_pump(index, pulses, *args, **kwargs):
-    for i, c in enumerate(checkboxes.children):
+def on_multi_pump(pulses, *args, **kwargs):
+    for c in checkboxes.children:
         if c.value:
-            do_pump(index, i, pulses)
+            pump = pumps[c.description]
+            do_pump(pump['addr'], pump['index'], pulses)
             
-button_pump.on_click(ft.partial(on_multi_pump, 15, pulses))
+button_pump.on_click(ft.partial(on_multi_pump, pulses))
 
 multi_pump_ui = ipw.HBox([checkboxes, pulses, button_pump])
 
@@ -178,4 +192,28 @@ accordion.set_title(2, 'Debug')
 
 label = ipw.Label()
 
-ipw.VBox([accordion, label])
+pump_ui = ipw.VBox([accordion, label])
+
+def valve_widget(addr, index, name, options=None):
+    if options is None:
+        options=['A', 'B']
+    valve = ipw.RadioButtons(options=options,
+                             description='Valve %s' % name)
+    
+    def on_toggle(addr, index, message, *args, **kwargs):
+        value = (message['new'] == 1)
+        
+        async def switch_valve():
+            await aremote.call('motor_ctrl.set_direction', addr, index, value)
+            await aremote.call('gc.collect')
+            
+        loop = asyncio.get_event_loop()
+        loop.create_task(asyncio.wait_for(switch_valve(), timeout=2))
+        
+    valve.observe(ft.partial(on_toggle, addr, index), names='index')
+    return valve
+
+valves_ui = ipw.VBox([valve_widget(valve['addr'], valve['index'], name)
+                      for name, valve in valves.items()])
+
+ipw.HBox([pump_ui, valves_ui])
