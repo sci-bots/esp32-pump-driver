@@ -70,26 +70,8 @@ print('found uart2 port: %s' % uart2_port.device)
 adevice = BackgroundSerialAsync(port=uart2_port.device, baudrate=115200)
 aremote = AsyncRemote(adevice)
 
-async def init_i2c_grove_board(aremote):
-    try:
-        # Turn off all pump outputs.
-        for i in range(4):
-            await aremote.call('motor_ctrl.set_direction', 15, i, False)
-            await aremote.call('gc.collect')
-        # Set all pump outputs to 100% duty cycle. This lets the pulsing code
-        # determine on/off durations for pump outputs.
-        await aremote.call('motor_ctrl.set_speed', 15, 1, 1)
-    except RuntimeError as exception:
-        if 'ETIMEDOUT' in str(exception):
-            raise RuntimeError('Error communicating with I2C motor grove.')
-
-async def init():
-    # Show free memory (in bytes) on ESP32.
-    await init_i2c_grove_board(aremote)
-    return (await aremote.call('gc.mem_free'))
-            
-    
-await init()
+# await aremote.call('i2c.scan')
+await aremote.call('gc.mem_free')
 
 # +
 # # Configuration
@@ -97,10 +79,10 @@ await init()
 # For each pump and valve:
 #  - `addr`: I2C address of corresponding Grove motor control board
 #  - `index`: output index (0-3) within the Grove motor control board
-pumps = OrderedDict([('1', {'addr': 15, 'index': 0}),
-                     ('2', {'addr': 15, 'index': 1})])
-valves = OrderedDict([('i', {'addr': 15, 'index': 2}),
-                      ('ii', {'addr': 15, 'index': 3})])
+pumps = OrderedDict([('1', {'addr': 70, 'index': 0}),
+                     ('2', {'addr': 70, 'index': 1})])
+valves = OrderedDict([('i', {'addr': 70, 'index': 2}),
+                      ('ii', {'addr': 70, 'index': 3})])
 
 # -----------------------------------------------------------------------------
 
@@ -118,9 +100,6 @@ def reset_esp32():
 
     def on_done(f):
         print('Reset successful (%d bytes free)' % f.result())
-        asyncio.run_coroutine_threadsafe(asyncio.wait_for(init_i2c_grove_board(aremote),
-                                                          timeout=4),
-                                         aremote.device.loop)
     future.add_done_callback(on_done)
 
 debug_buttons = []
@@ -149,8 +128,8 @@ def do_pump(addr, index, pulses, *args, **kwargs):
     loop.create_task(asyncio.wait_for(aremote.create_task('motor_ctrl.pump',
                                                           addr, index,
                                                           pulses.value,
-                                                          on_ms=400,
-                                                          off_ms=200),
+                                                          on_ms=100,
+                                                          off_ms=100),
                                       timeout=2))
     
 def set_direction(addr, index, on, *args, **kwargs):
@@ -217,3 +196,6 @@ valves_ui = ipw.VBox([valve_widget(valve['addr'], valve['index'], name)
                       for name, valve in valves.items()])
 
 ipw.HBox([pump_ui, valves_ui])
+# -
+
+

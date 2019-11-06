@@ -23,7 +23,7 @@ Start a command prompt or Powershell session and run the following:
 
 ```sh
 conda init  # Initialize shell support for Conda
-conda create -n esp32-pump -c conda-forge -c sci-bots nodejs astroid ecdsa isort lazy-object-proxy mccabe pylint pyserial typing websocket-client pyserial six jupyter notebook jupyterlab jupytext autopep8 ipywidgets asyncserial pyaes pyside2
+conda create -n esp32-pump -c conda-forge -c sci-bots -c sci-bots/label/dropbot nodejs astroid ecdsa isort lazy-object-proxy mccabe pylint pyserial typing websocket-client pyserial six jupyter notebook jupyterlab jupytext autopep8 ipywidgets asyncserial pyaes pyside2 grove-i2c-motor-driver
 conda activate esp32-pump
 conda config --env --append channels conda-forge
 jupyter labextension install @jupyter-widgets/jupyterlab-manager
@@ -84,9 +84,13 @@ esptool --port $ESP_PORT --baud 460800 erase_flash
 esptool --port $ESP_PORT --baud 460800 --chip esp32 write_flash -z 0x1000 $ESP_MICROPYTHON
 # Bootstrap with code
 python -m there ls
-python -m there push -r lib /
-python -m there push -r app /
-python -m there push -r boot.py /
+# Copy files to `build` directory.
+Copy-Item -Recurse .\app\* -Destination build\app
+Copy-Item -Recurse .\lib\* -Destination build\lib
+# Add Sci-Bots Conda-packaged MicroPython libraries.
+cmd /C robocopy "$env:CONDA_PREFIX/share/platformio/micropython-lib" build/lib /s
+copy boot.py build
+python -m there push -r build /
 ```
 3. Reset board and display serial output: `python -m there --reset -i`
  - Press `Ctrl+C` to enter read/execute/print loop (i.e., REPL).
