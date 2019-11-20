@@ -45,23 +45,23 @@ aremote = AsyncRemote(adevice)
 # For each pump and valve:
 #  - `addr`: I2C address of corresponding Grove motor control board
 #  - `index`: output index (0-3) within the Grove motor control board
-pumps = OrderedDict([('16-3', {'addr': 16, 'index': 3}),
-                     ('16-4', {'addr': 16, 'index': 4}),
-                     ('17-1', {'addr': 17, 'index': 1}),
-                     ('17-2', {'addr': 17, 'index': 2}),
-                     ('17-3', {'addr': 17, 'index': 3}),
-                     ('17-4', {'addr': 17, 'index': 4}),
-                     ('18-1', {'addr': 18, 'index': 1}),
-                     ('18-2', {'addr': 18, 'index': 2}),
-                     ('18-3', {'addr': 18, 'index': 3}),
-                     ('18-4', {'addr': 18, 'index': 4})])
+pumps = OrderedDict([('16-3', {'addr': 16, 'index': 2}),
+                     ('16-4', {'addr': 16, 'index': 3}),
+                     ('17-1', {'addr': 17, 'index': 0}),
+                     ('17-2', {'addr': 17, 'index': 1}),
+                     ('17-3', {'addr': 17, 'index': 2}),
+                     ('17-4', {'addr': 17, 'index': 3}),
+                     ('18-1', {'addr': 18, 'index': 0}),
+                     ('18-2', {'addr': 18, 'index': 1}),
+                     ('18-3', {'addr': 18, 'index': 2}),
+                     ('18-4', {'addr': 18, 'index': 3})])
     
-valves = OrderedDict([('15-1', {'addr': 15, 'index': 1}),
-                      ('15-2', {'addr': 15, 'index': 2}),
-                      ('15-3', {'addr': 15, 'index': 3}),
-                      ('15-4', {'addr': 15, 'index': 4}),
-                      ('16-1', {'addr': 16, 'index': 1}),
-                      ('16-2', {'addr': 16, 'index': 2})])
+valves = OrderedDict([('15-1', {'addr': 15, 'index': 0}),
+                      ('15-2', {'addr': 15, 'index': 1}),
+                      ('15-3', {'addr': 15, 'index': 2}),
+                      ('15-4', {'addr': 15, 'index': 3}),
+                      ('16-1', {'addr': 16, 'index': 0}),
+                      ('16-2', {'addr': 16, 'index': 1})])
 
 i2c_devices = asyncio.run_coroutine_threadsafe(aremote.call('i2c.scan'),
                                                aremote.device.loop).result()
