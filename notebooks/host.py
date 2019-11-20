@@ -37,31 +37,34 @@ def debug_widget(aremote):
     return hbox_debug
 
 # -----------------------------------------------------------------------------
+# Single pump UI (i.e., one button per pump); can still run more than one at a time
+def do_pump(aremote, addr, index, pulses_widget, period_widget, *args, **kwargs):
+    loop = asyncio.get_event_loop()
+    loop.create_task(asyncio.wait_for(aremote
+                                      .create_task('motor_ctrl.pump', addr,
+                                                   index, pulses_widget.value,
+                                                   on_ms=150,
+                                                   off_ms=int(period_widget
+                                                              .value * 1e3) -
+                                                   150),
+                                      timeout=2))
 
 # # Pump control
 def pump_widget(aremote, pumps):
     loop = asyncio.get_event_loop()
 
-    # Single pump UI (i.e., one button per pump); can still run more than one at a time
-    def do_pump(addr, index, pulses, *args, **kwargs):
-        loop = asyncio.get_event_loop()
-        loop.create_task(asyncio.wait_for(aremote.create_task('motor_ctrl.pump',
-                                                              addr, index,
-                                                              pulses.value,
-                                                              on_ms=500,
-                                                              off_ms=500),
-                                          timeout=2))
-
     def set_direction(addr, index, on, *args, **kwargs):
         return asyncio.wait_for(aremote.call('motor_ctrl.set_direction', addr, index, on), timeout=2)
-
 
     buttons = []
     for name_i, pump_i in pumps.items():
         button_i = ipw.Button(description='Pump %s' % name_i)
         pulses_i = ipw.IntSlider(min=0, max=125, value=25, description='Pulses')
-        button_i.on_click(ft.partial(do_pump, pump_i['addr'], pump_i['index'], pulses_i))
-        buttons.append(ipw.HBox([button_i, pulses_i]))
+        period_i = ipw.FloatSlider(min=0., max=125., value=1.,
+                                   description='Period (s)')
+        button_i.on_click(ft.partial(do_pump, aremote, pump_i['addr'],
+                                     pump_i['index'], pulses_i, period_i))
+        buttons.append(ipw.HBox([button_i, pulses_i, period_i]))
 
     single_pump_ui = ipw.VBox(buttons)
     return single_pump_ui
@@ -70,22 +73,25 @@ def pump_widget(aremote, pumps):
 def multi_pump_widget(aremote, pumps):
     # Multiple pump UI (i.e., one button to start multiple pumps simultaneously)
     pulses = ipw.IntSlider(min=0, max=125, value=25, description='Pulses')
-    button_pump = ipw.Button(description='Pump', tooltip='''
+    period = ipw.FloatSlider(min=0., max=125., value=1.,
+                             description='Period (s)')
+    button_pump = ipw.Button(description='Pump', tooltip='''\
     1) Use checkboxes to select one or more pumps.
     2) Select number of pulses.
     3) Click here to execute pulses.'''.strip())
     checkboxes = ipw.VBox([ipw.Checkbox(description=name_i, index=True)
                            for name_i in pumps])
+    sliders = ipw.VBox([pulses, period])
 
-    def on_multi_pump(pulses, *args, **kwargs):
+    def on_multi_pump(pulses, period, *args, **kwargs):
         for c in checkboxes.children:
             if c.value:
                 pump = pumps[c.description]
-                do_pump(pump['addr'], pump['index'], pulses)
+                do_pump(aremote, pump['addr'], pump['index'], pulses, period)
 
-    button_pump.on_click(ft.partial(on_multi_pump, pulses))
+    button_pump.on_click(ft.partial(on_multi_pump, pulses, period))
 
-    multi_pump_ui = ipw.HBox([checkboxes, pulses, button_pump])
+    multi_pump_ui = ipw.HBox([checkboxes, sliders, button_pump])
     return multi_pump_ui
 
 
