@@ -22,17 +22,17 @@ def debug_widget(aremote):
     def reset_esp32():
         future = asyncio.run_coroutine_threadsafe(aremote.reset(),
                                                   aremote.device.loop)
-    
+
         def on_done(f):
             print('Reset successful (%d bytes free)' % f.result())
         future.add_done_callback(on_done)
-    
+
     debug_buttons = []
-    
+
     button_reset = ipw.Button(description='Reset ESP32')
     button_reset.on_click(lambda *args: reset_esp32())
     debug_buttons.append(button_reset)
-    
+
     hbox_debug = ipw.HBox(debug_buttons)
     return hbox_debug
 
@@ -99,7 +99,7 @@ def control_widget(aremote, pumps, valves):
     single_pump_ui = pump_widget(aremote, pumps)
     multi_pump_ui = multi_pump_widget(aremote, pumps)
     hbox_debug = debug_widget(aremote)
-    
+
     accordion = ipw.Accordion(children=[single_pump_ui, multi_pump_ui, hbox_debug])
 
     accordion.set_title(0, 'Single pump')
@@ -132,3 +132,54 @@ def control_widget(aremote, pumps, valves):
     valves_ui = ipw.VBox([valve_widget(valve['addr'], valve['index'], name)
                           for name, valve in valves.items()])
     return ipw.HBox([pump_ui, valves_ui])
+
+
+def valved_pump_widget(aremote, valve_configs, pump, default_pulses=20):
+    def _do_pump(valve_configs, pump, pulses_widget, period_widget, *args):
+        for valve, state in valve_configs:
+            asyncio.run_coroutine_threadsafe(
+                aremote.call('motor_ctrl.set_direction', valve['addr'],
+                             valve['index'], state),
+                aremote.device.loop).result()
+        do_pump(aremote, pump['addr'], pump['index'], pulses_widget, period_widget)
+
+    button = ipw.Button(description='Pump')
+    pulses = ipw.IntSlider(min=0, max=125, value=default_pulses, description='Pulses')
+    period = ipw.FloatSlider(min=0.2, max=125., value=1.,
+                               description='Period (s)')
+    button.on_click(ft.partial(_do_pump, valve_configs, pump, pulses, period))
+    return ipw.HBox([button, pulses, period])
+
+
+def pump_wash_to_beads_widget(aremote, valves, pumps):
+    valve_configs = [(valves['16-2'], 1)]
+    pump = pumps['16-3']
+    return valved_pump_widget(aremote, valve_configs, pump, default_pulses=20)
+
+
+def pump_lysate_to_beads_widget(aremote, valves, pumps):
+    valve_configs = [(valves['16-1'], 0),
+                       (valves['16-2'], 0)]
+    pump = pumps['16-3']
+    return valved_pump_widget(aremote, valve_configs, pump, default_pulses=100)
+
+
+def pump_elution_to_beads_widget(aremote, valves, pumps):
+    valve_configs = [(valves['16-1'], 1),
+                     (valves['16-2'], 0)]
+    pump = pumps['16-3']
+    return valved_pump_widget(aremote, valve_configs, pump, default_pulses=100)
+
+
+def tasks_widget(aremote, pumps, valves):
+    pump_wash_to_beads_ui = pump_wash_to_beads_widget(aremote, valves, pumps)
+    pump_lysate_to_beads_ui = pump_lysate_to_beads_widget(aremote, valves, pumps)
+    pump_elution_to_beads_ui = pump_elution_to_beads_widget(aremote, valves, pumps)
+
+    accordion = ipw.Accordion(children=[pump_wash_to_beads_ui, pump_lysate_to_beads_ui,
+                                        pump_elution_to_beads_ui])
+
+    accordion.set_title(0, 'Pump wash to beads')
+    accordion.set_title(1, 'Pump lysate to beads')
+    accordion.set_title(2, 'Pump elution to beads')
+    return accordion

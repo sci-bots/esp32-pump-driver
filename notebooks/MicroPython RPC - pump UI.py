@@ -25,6 +25,7 @@ import time
 from asyncserial import BackgroundSerialAsync
 from rpc_host import AsyncRemote
 import host
+import ipywidgets as ipw
 
 try:
     global adevice
@@ -71,4 +72,8 @@ missing_drivers = set(driver_addresses) - set(i2c_devices)
 if missing_drivers:
     logging.warning('The following pump/valve I2C driver boards were '
                     'not found: %s' % sorted(missing_drivers))
-host.control_widget(aremote, pumps, valves)
+ipw.VBox([host.control_widget(aremote, pumps, valves),
+          host.tasks_widget(aremote, pumps, valves)])
+# -
+
+
