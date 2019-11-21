@@ -74,6 +74,3 @@ if missing_drivers:
                     'not found: %s' % sorted(missing_drivers))
 ipw.VBox([host.control_widget(aremote, pumps, valves),
           host.tasks_widget(aremote, pumps, valves)])
-# -
-
-
